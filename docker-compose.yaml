@@ -21,6 +21,11 @@ services:
         target: /sukima
         bind:
           create_host_path: true
+      - type: bind
+        source: ./storage/hf-cache
+        target: /root/.cache/huggingface
+        bind:
+          create_host_path: true
     command: "bash -c \"alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000\""
     depends_on:
       - database

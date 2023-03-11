@@ -5,12 +5,13 @@ asyncpg
 pydantic
 alembic
 sqlalchemy
-bitsandbytes-cuda113
+bitsandbytes
 numpy
 transformers
+safetensors
 bcrypt
 passlib
-mmappickle
+git+https://github.com/neggles/mmappickle@numpy-1.20#egg=mmappickle
 psutil
 Pillow
 openai

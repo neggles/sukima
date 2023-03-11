@@ -55,6 +55,10 @@ WORKDIR /sukima
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m pip install -r requirements.txt
 
+# dirty hack for bitsandbytes
+RUN sed -i 's/cuda_setup\.add_log_entry("WARNING: Compute capability < 7.5 detected!/CUDASetup.get_instance().add_log_entry("WARNING: Compute capability < 7.5 detected!/' \
+    /usr/local/lib/python3.10/site-packages/bitsandbytes/cuda_setup/main.py
+
 # CUDA env vars
 ENV NVIDIA_DRIVER_CAPABILITIES "compute,utility"
 ENV NVIDIA_REQUIRE_CUDA "cuda>=11.7 driver>=450"
