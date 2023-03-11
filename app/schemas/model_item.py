@@ -22,11 +22,12 @@ class ModelGenArgs(BaseModel):
     logprobs: Optional[int] = None
     best_of: Optional[int] = None
 
+
 class ModelSampleArgs(BaseModel):
     class ModelLogitBiasArgs(BaseModel):
         id: int
         bias: float
-    
+
     class ModelPhraseBiasArgs(BaseModel):
         sequences: List[str]
         bias: float
@@ -61,15 +62,20 @@ class ModelClassifyRequest(BaseModel):
     prompt: str
     labels: list
 
+
 class ModelHiddenRequest(BaseModel):
     model: str
     prompt: str
     layers: List[int]
 
+
 class ModelLoadRequest(BaseModel):
     model: str
+    revision: Optional[str] = ""
+    subfolder: Optional[str] = ""
+    type: Optional[str] = "gpt"
     parallel: Optional[bool] = False
     sharded: Optional[bool] = False
     quantized: Optional[bool] = False
     tensorize: Optional[bool] = False
-    device: Optional[str] = 'cpu'
+    device: Optional[str] = "cpu"

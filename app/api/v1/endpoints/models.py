@@ -31,7 +31,9 @@ async def get_model_list():
 
 
 @router.post("/load")
-async def load_model(request: ModelLoadRequest, current_user: User = Depends(get_current_approved_user)): # noqa
+async def load_model(
+    request: ModelLoadRequest, current_user: User = Depends(get_current_approved_user)
+):  # noqa
     # Check that model exists
     if gpt_models is not None:
         for m in gpt_models:
@@ -40,13 +42,35 @@ async def load_model(request: ModelLoadRequest, current_user: User = Depends(get
 
     try:
         try:
-            if is_decoder(AutoConfig.from_pretrained(request.model)):
-                model = GPTHF(model_name=request.model, device=request.device, parallelize=request.parallel, sharded=request.sharded, quantized=request.quantized, tensorized=request.tensorize)
-            else:
-                if not ('clip' in request.model):
-                    model = BERTHF(model_name=request.model, device=request.device, parallelize=request.parallel, sharded=request.    sharded, quantized=request.quantized, tensorized=request.tensorize)
-                else:
-                    model = CLIP(model_name=request.model, device=request.device, parallelize=request.parallel, sharded=request.sharded, quantized=request.quantized, tensorized=request.tensorize)
+            if "gpt" in request.type:
+                model = GPTHF(
+                    model_name=request.model,
+                    revision=request.revision if request.revision != "" else None,
+                    subfolder=request.subfolder if request.subfolder != "" else None,
+                    device=request.device,
+                    parallelize=request.parallel,
+                    sharded=request.sharded,
+                    quantized=request.quantized,
+                    tensorized=request.tensorize,
+                )
+            elif "bert" in request.type:
+                model = BERTHF(
+                    model_name=request.model,
+                    device=request.device,
+                    parallelize=request.parallel,
+                    sharded=request.sharded,
+                    quantized=request.quantized,
+                    tensorized=request.tensorize,
+                )
+            elif "clip" in request.type:
+                model = CLIP(
+                    model_name=request.model,
+                    device=request.device,
+                    parallelize=request.parallel,
+                    sharded=request.sharded,
+                    quantized=request.quantized,
+                    tensorized=request.tensorize,
+                )
         except:
             model = OpenAI(model_name=request.model, decoder=True)
 
@@ -55,45 +79,61 @@ async def load_model(request: ModelLoadRequest, current_user: User = Depends(get
         return {"message": f"Successfully loaded model: {request.model}"}
 
     except Exception as e:
-        return HTTPException(status_code=400, detail=f"Unable to load the model!\n{e}\n{traceback.format_exc()}")
+        return HTTPException(
+            status_code=400, detail=f"Unable to load the model!\n{e}\n{traceback.format_exc()}"
+        )
 
 
 @router.post("/generate")
-async def generate(request: ModelGenRequest, current_user: User = Depends(get_current_approved_user), session: AsyncSession = Depends(get_session)): # noqa
+async def generate(
+    request: ModelGenRequest,
+    current_user: User = Depends(get_current_approved_user),
+    session: AsyncSession = Depends(get_session),
+):  # noqa
     for m in gpt_models:
         if m.model_name == request.model:
             db_softprompt = None
             if request.softprompt:
                 db_softprompt = await crud.soft_prompt.get(session, request.softprompt)
                 if db_softprompt is None:
-                    raise HTTPException(status_code=400, detail=f"No soft prompt with UUID {request.softprompt} exists!") # noqa
+                    raise HTTPException(
+                        status_code=400, detail=f"No soft prompt with UUID {request.softprompt} exists!"
+                    )  # noqa
             try:
                 if not m.decoder:
                     raise RuntimeError("This is not a decoder model!")
                 return m.generate(request.dict(), db_softprompt=db_softprompt)
             except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Unable to generate!\n{e}\n{traceback.format_exc()}")
+                raise HTTPException(
+                    status_code=400, detail=f"Unable to generate!\n{e}\n{traceback.format_exc()}"
+                )
 
     raise HTTPException(status_code=404, detail="Model not found.")
 
+
 @router.post("/classify")
-async def classify(request: ModelClassifyRequest, current_user: User = Depends(get_current_approved_user)): # noqa
+async def classify(
+    request: ModelClassifyRequest, current_user: User = Depends(get_current_approved_user)
+):  # noqa
     for m in gpt_models:
         if m.model_name == request.model:
             try:
                 return m.classify(request.dict())
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Invalid request body!\n{e}")
-        
+
     raise HTTPException(status_code=404, detail="Model not found.")
 
+
 @router.post("/hidden")
-async def hidden(request: ModelHiddenRequest, current_user: User = Depends(get_current_approved_user)): # noqa
+async def hidden(
+    request: ModelHiddenRequest, current_user: User = Depends(get_current_approved_user)
+):  # noqa
     for m in gpt_models:
         if m.model_name == request.model:
             try:
                 return m.hidden(request.dict())
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Invalid request body!\n{e}")
-    
+
     raise HTTPException(status_code=404, detail="Model not found.")
