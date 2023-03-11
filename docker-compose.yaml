@@ -1,35 +1,51 @@
 version: "3.8"
 
 services:
-    app:
-        image: sukima_app:latest
-        build:
-            context: ./
-            dockerfile: Dockerfile
-        env_file:
-            - conf.env
-        ports:
-            - "8000:8000"
-        volumes:
-            - ./:/sukima/
-        command: bash -c "alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-        depends_on:
-            database:
-                condition: service_healthy
+  app:
+    container_name: sukima
+    image: sukima:latest
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - conf.env
+    ports:
+      - mode: ingress
+        target: 8000
+        published: 8000
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./
+        target: /sukima
+        bind:
+          create_host_path: true
+    command: "bash -c \"alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000\""
+    depends_on:
+      - database
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [ gpu ]
+              driver: nvidia
+              device_ids: [ "0" ]
 
-    database:
-        image: postgres:14-bullseye
-        env_file:
-            - conf.env
-        ports:
-            - 5432:5432
-        volumes:
-            - postgres_data:/var/lib/postgresql/data/
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres"]
-            interval: 5s
-            timeout: 5s
-            retries: 5
-
-volumes:
-    postgres_data:
+  database:
+    container_name: postgres
+    image: postgres:14-bullseye
+    restart: unless-stopped
+    env_file:
+      - conf.env
+    ports:
+      - mode: ingress
+        target: 5432
+        published: 5432
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./storage/postgres
+        target: /var/lib/postgresql/data/
+        bind:
+          create_host_path: true
