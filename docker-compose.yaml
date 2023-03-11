@@ -35,7 +35,7 @@ services:
           devices:
             - capabilities: [ gpu ]
               driver: nvidia
-              device_ids: [ "0" ]
+              device_ids: [ "1" ]
 
   database:
     container_name: postgres

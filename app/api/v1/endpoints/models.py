@@ -45,8 +45,7 @@ async def load_model(
             if "gpt" in request.type:
                 model = GPTHF(
                     model_name=request.model,
-                    revision=request.revision if request.revision != "" else None,
-                    subfolder=request.subfolder if request.subfolder != "" else None,
+                    subfolder=request.subfolder,
                     device=request.device,
                     parallelize=request.parallel,
                     sharded=request.sharded,
