@@ -1,3 +1,5 @@
 /.git/
 /storage/
 /.github/
+/conf.env
+/*.env

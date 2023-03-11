@@ -133,9 +133,11 @@ dmypy.json
 .pyre/
 
 # Secrets
-conf.env
+/*.env
+!/*.example.env
 secrets.json
 db.json
 
 .vscode
 .idea
+
