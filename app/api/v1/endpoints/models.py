@@ -7,9 +7,7 @@ from app.api.deps import get_current_approved_user, get_session
 from app.gpt.berthf import BERTHF
 from app.gpt.gpthf import GPTHF
 from app.gpt.clip import CLIP
-from app.gpt.gooseai import OpenAI
 from app.gpt.models import gpt_models
-from app.gpt.utils import is_decoder
 from app.schemas.model_item import ModelGenRequest, ModelLoadRequest, ModelClassifyRequest, ModelHiddenRequest
 from app.schemas.user import User
 
@@ -41,45 +39,46 @@ async def load_model(
                 raise HTTPException(status_code=400, detail="Model already loaded")
 
     try:
-        try:
-            if "gpt" in request.type:
-                model = GPTHF(
-                    model_name=request.model,
-                    subfolder=request.subfolder,
-                    device=request.device,
-                    parallelize=request.parallel,
-                    sharded=request.sharded,
-                    quantized=request.quantized,
-                    tensorized=request.tensorize,
-                )
-            elif "bert" in request.type:
-                model = BERTHF(
-                    model_name=request.model,
-                    device=request.device,
-                    parallelize=request.parallel,
-                    sharded=request.sharded,
-                    quantized=request.quantized,
-                    tensorized=request.tensorize,
-                )
-            elif "clip" in request.type:
-                model = CLIP(
-                    model_name=request.model,
-                    device=request.device,
-                    parallelize=request.parallel,
-                    sharded=request.sharded,
-                    quantized=request.quantized,
-                    tensorized=request.tensorize,
-                )
-        except:
-            model = OpenAI(model_name=request.model, decoder=True)
+        if "gpt" in request.type:
+            model = GPTHF(
+                model_name=request.model,
+                subfolder=request.subfolder,
+                revision=request.revision,
+                device=request.device,
+                parallelize=request.parallel,
+                sharded=request.sharded,
+                quantized=request.quantized,
+                tensorized=request.tensorize,
+            )
+        elif "bert" in request.type:
+            model = BERTHF(
+                model_name=request.model,
+                device=request.device,
+                parallelize=request.parallel,
+                sharded=request.sharded,
+                quantized=request.quantized,
+                tensorized=request.tensorize,
+            )
+        elif "clip" in request.type:
+            model = CLIP(
+                model_name=request.model,
+                device=request.device,
+                parallelize=request.parallel,
+                sharded=request.sharded,
+                quantized=request.quantized,
+                tensorized=request.tensorize,
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Unknown model type")
 
         gpt_models.append(model)
 
         return {"message": f"Successfully loaded model: {request.model}"}
 
     except Exception as e:
-        return HTTPException(
-            status_code=400, detail=f"Unable to load the model!\n{e}\n{traceback.format_exc()}"
+        raise HTTPException(
+            status_code=400,
+            detail=[f"Unable to load the model!", f"{e}"] + f"{traceback.format_exc()}".splitlines(),
         )
 
 

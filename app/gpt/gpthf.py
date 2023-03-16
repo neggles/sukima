@@ -21,6 +21,8 @@ from transformers import (
     TopKLogitsWarper,
     TopPLogitsWarper,
     MinLengthLogitsProcessor,
+    PreTrainedModel,
+    models as transformers_models,
 )
 
 from pathlib import Path
@@ -29,7 +31,6 @@ import numpy as np
 import zlib
 
 try:
-    import transformers
     from app.gpt.quantization import GPTJBlock, GPTJForCausalLM
 except ImportError:
     pass  # don't do quantization
@@ -39,24 +40,22 @@ class GPTHF(AutoHF):
     def __init__(
         self,
         model_name="hakurei/gpt-j-random-tinier",
-        revision=None,
-        subfolder=None,
         device=None,
         parallelize=False,
         sharded=False,
         quantized=False,
         tensorized=False,
+        **kwargs,
     ):
         super().__init__(model_name=model_name, decoder=True)
 
         model_dtype = get_dtype(device)
         self.device = device
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=model_name, revision=revision, subfolder=subfolder
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_name, **kwargs)
         self.tensorized = False
+        self.model: PreTrainedModel = None
 
-        if tensorized:
+        if tensorized is True:
             # check if tensorized model already exists so we can skip expensive model loading below
             _path, exists = tensorized_path(model_name)
             if exists:
@@ -64,12 +63,9 @@ class GPTHF(AutoHF):
                 self.model = untensorize(str(_path), self.device, quantized=quantized)
                 self.tensorized = True
 
-        if sharded:
+        if sharded is True:
             model_cfg = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path=model_name,
-                revision=revision,
-                subfolder=subfolder,
-                return_dict_in_generate=True,
+                pretrained_model_name_or_path=model_name, return_dict_in_generate=True, **kwargs
             )
             self.model = (
                 AutoModelForSoftPromptLM.from_pretrained(
@@ -81,32 +77,30 @@ class GPTHF(AutoHF):
                 .eval()
                 .to(self.device)
             )
-        elif (not sharded) and (not quantized) and (not self.tensorized):
+        elif (sharded is False) and (quantized is False) and (self.tensorized is False):
             self.model = (
                 AutoModelForSoftPromptLM.from_pretrained(
                     pretrained_model_name_or_path=model_name,
-                    revision=revision,
-                    subfolder=subfolder,
                     return_dict_in_generate=True,
                     torch_dtype=model_dtype,
+                    **kwargs,
                 )
                 .eval()
                 .to(self.device)
             )
 
-        if quantized:
+        if quantized is True:
             self.quantized = True
             logger.info(f"Quantizing model {model_name}")
             # we assume this is a gptj model - TODO: fix this
-            transformers.models.gptj.modeling_gptj.GPTJBlock = GPTJBlock  # monkey-patch GPT-J
+            transformers_models.gptj.modeling_gptj.GPTJBlock = GPTJBlock  # monkey-patch GPT-J
             if not self.tensorized:
                 self.model = (
                     GPTJForCausalLM.from_pretrained(
                         pretrained_model_name_or_path=model_name,
-                        revision=revision,
-                        subfolder=subfolder,
                         low_cpu_mem_usage=True,
                         return_dict_in_generate=True,
+                        **kwargs,
                     )
                     .eval()
                     .to(self.device)
@@ -115,7 +109,7 @@ class GPTHF(AutoHF):
         else:
             self.quantized = False
 
-        if (tensorized) and (not self.tensorized):
+        if (tensorized is True) and (self.tensorized is False):
             # check if model file exists in ./storage/{model_name}.model
             _path, exists = tensorized_path(model_name)
             if not exists:

@@ -71,7 +71,7 @@ class ModelHiddenRequest(BaseModel):
 
 class ModelLoadRequest(BaseModel):
     model: str
-    revision: Optional[str] = ""
+    revision: Optional[str] = "main"
     subfolder: Optional[str] = ""
     type: Optional[str] = "gpt"
     parallel: Optional[bool] = False

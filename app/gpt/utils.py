@@ -10,6 +10,7 @@ except ImportError:
 
 from pathlib import Path
 
+
 class Checkpoint(MutableMapping):
     def __init__(self, chkpt_dir, device="cpu"):
         self.device = device
@@ -46,23 +47,25 @@ class Checkpoint(MutableMapping):
     def copy(self):
         return Checkpoint(self.chkpt_dir, device=self.device)
 
+
 def get_dtype(device: torch.device):
     model_dtype = torch.float32
     if device is None:
         if torch.cuda.is_available():
-            device = torch.device('cuda')
-            model_dtype = torch.float16
+            device = torch.device("cuda")
+            model_dtype = torch.bfloat16
         else:
-            device = torch.device('cpu')
+            device = torch.device("cpu")
             model_dtype = torch.float32
     else:
-        if device == 'cuda':
-            model_dtype = torch.float16
+        if device == "cuda":
+            model_dtype = torch.bfloat16
     return model_dtype
 
+
 def is_decoder(config: AutoConfig):
-    decoder_types = ['gpt2', 'gptj', 'gpt_neo', 'gpt_neox', 'xglm']
-    encoder_types = ['distilbert', 'bert', 'xlm', 'xlm-roberta', 'roberta', 'clip']
+    decoder_types = ["gpt2", "gptj", "gpt_neo", "gpt_neox", "xglm"]
+    encoder_types = ["distilbert", "bert", "xlm", "xlm-roberta", "roberta", "clip"]
 
     if config.model_type in decoder_types:
         return True
@@ -71,6 +74,7 @@ def is_decoder(config: AutoConfig):
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
 
+
 def tensorized_path(model_name: str):
-    f = Path(settings.STORAGE_PATH) / Path(model_name.split('/')[-1])
-    return f, f.with_suffix('.model').exists()
+    f = Path(settings.STORAGE_PATH) / Path(model_name.split("/")[-1])
+    return f, f.with_suffix(".model").exists()

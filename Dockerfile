@@ -65,7 +65,6 @@ ENV NVIDIA_REQUIRE_CUDA "cuda>=11.7 driver>=450"
 
 # set up environment variables
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH "${PYTHONPATH}:/"
 ENV PORT 8000
 
 EXPOSE ${PORT}
