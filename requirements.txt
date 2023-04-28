@@ -5,7 +5,7 @@ asyncpg
 pydantic
 alembic
 sqlalchemy
-bitsandbytes
+bitsandbytes>=0.38.0
 numpy
 transformers
 safetensors
